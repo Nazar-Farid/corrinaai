@@ -6,35 +6,34 @@ import ProductTable from '@/components/products'
 import { redirect } from 'next/navigation'
 import React from 'react'
 
-type Props = { params: { domain: string } }
+interface Props {
+  params: { domain: string }
+}
 
 const DomainSettingsPage = async ({ params }: Props) => {
   const domain = await onGetCurrentDomainInfo(params.domain)
 
-  // Redirect if domain info is missing or domain.domains is empty
-  if (!domain || !domain.domains || domain.domains.length === 0) {
+  if (!domain || !domain.subscription || !domain.domains?.length) {
     redirect('/dashboard')
   }
 
-  const currentDomain = domain.domains[0]
-  const plan = domain.subscription?.plan ?? 'STANDARD' // Provide a default plan or handle accordingly
-  const chatBot = currentDomain.chatBot ?? null
-  const id = currentDomain.id ?? ''
-  const name = currentDomain.name ?? ''
-  const products = currentDomain.products ?? []
+  const domainInfo = domain.domains[0]
 
   return (
     <>
       <InfoBar />
       <div className="overflow-y-auto w-full chat-window flex-1 h-0">
         <SettingsForm
-          plan={plan}
-          chatBot={chatBot}
-          id={id}
-          name={name}
+          plan={domain.subscription.plan as 'STANDARD' | 'PRO' | 'ULTIMATE'}
+          chatBot={domainInfo.chatBot}
+          id={domainInfo.id}
+          name={domainInfo.name}
         />
-        <BotTrainingForm id={id} />
-        <ProductTable id={id} products={products} />
+        <BotTrainingForm id={domainInfo.id} />
+        <ProductTable
+          id={domainInfo.id}
+          products={domainInfo.products || []}
+        />
       </div>
     </>
   )
