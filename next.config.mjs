@@ -1,4 +1,10 @@
 /** @type {import('next').NextConfig} */
+module.exports = {
+  experimental: {
+    serverActions: true,
+    optimizePackageImports: ['@prisma/client']
+  }
+}
 const nextConfig = {
   reactStrictMode: false,
   images: {

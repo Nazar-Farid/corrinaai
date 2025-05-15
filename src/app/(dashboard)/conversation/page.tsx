@@ -23,5 +23,10 @@ const ConversationPage = async (props: Props) => {
     </div>
   )
 }
+// Add these exports at the bottom
+export const dynamic = 'force-dynamic'
+export const fetchCache = 'force-no-store'
+export const revalidate = 0
+
 
 export default ConversationPage
