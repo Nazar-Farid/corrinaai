@@ -1,20 +1,23 @@
-import { client } from '@/lib/prisma'
-import { currentUser } from '@clerk/nextjs'
-import { NextResponse } from 'next/server'
-import Stripe from 'stripe'
+import { client } from '@/lib/prisma';
+import { currentUser } from '@clerk/nextjs';
+import { NextResponse } from 'next/server';
+import Stripe from 'stripe';
 
-export const dynamic = 'force-dynamic' 
+export const dynamic = 'force-dynamic';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET!, {
+const stripeSecret = process.env.STRIPE_SECRET;
+if (!stripeSecret) throw new Error('STRIPE_SECRET is not defined in environment variables.');
+
+const stripe = new Stripe(stripeSecret, {
   typescript: true,
   apiVersion: '2024-04-10',
-})
+});
 
 export async function GET() {
   try {
-    const user = await currentUser()
+    const user = await currentUser();
     if (!user) {
-      return new NextResponse('User not authenticated', { status: 401 })
+      return NextResponse.json({ error: 'User not authenticated' }, { status: 401 });
     }
 
     const account = await stripe.accounts.create({
@@ -30,9 +33,9 @@ export async function GET() {
         date: Math.floor(Date.now() / 1000),
         ip: '172.18.80.19',
       },
-    })
+    });
 
-    const approve = await stripe.accounts.update(account.id, {
+    await stripe.accounts.update(account.id, {
       business_profile: {
         mcc: '5045',
         url: 'https://bestcookieco.com',
@@ -48,7 +51,7 @@ export async function GET() {
         name: 'The Best Cookie Co',
         phone: '8888675309',
       },
-    })
+    });
 
     const person = await stripe.accounts.createPerson(account.id, {
       first_name: 'Jenny',
@@ -57,33 +60,23 @@ export async function GET() {
         representative: true,
         title: 'CEO',
       },
-    })
+    });
 
-    const approvePerson = await stripe.accounts.updatePerson(
-      account.id,
-      person.id,
-      {
-        address: {
-          city: 'Victoria',
-          line1: '123 State St',
-          postal_code: 'V8P 1A1',
-          state: 'BC',
-        },
-        dob: {
-          day: 10,
-          month: 11,
-          year: 1980,
-        },
-        ssn_last_4: '0000',
-        phone: '8888675309',
-        email: 'jenny@bestcookieco.com',
-        relationship: {
-          executive: true,
-        },
-      }
-    )
+    await stripe.accounts.updatePerson(account.id, person.id, {
+      address: {
+        city: 'Victoria',
+        line1: '123 State St',
+        postal_code: 'V8P 1A1',
+        state: 'BC',
+      },
+      dob: { day: 10, month: 11, year: 1980 },
+      ssn_last_4: '0000',
+      phone: '8888675309',
+      email: 'jenny@bestcookieco.com',
+      relationship: { executive: true },
+    });
 
-    const owner = await stripe.accounts.createPerson(account.id, {
+    await stripe.accounts.createPerson(account.id, {
       first_name: 'Kathleen',
       last_name: 'Banks',
       email: 'kathleen@bestcookieco.com',
@@ -93,43 +86,39 @@ export async function GET() {
         postal_code: 'V8P 1A1',
         state: 'BC',
       },
-      dob: {
-        day: 10,
-        month: 11,
-        year: 1980,
-      },
+      dob: { day: 10, month: 11, year: 1980 },
       phone: '8888675309',
       relationship: {
         owner: true,
         percent_ownership: 80,
       },
-    })
+    });
 
     await stripe.accounts.update(account.id, {
       company: {
         owners_provided: true,
       },
-    })
+    });
 
-    const saveAccountId = await client.user.update({
+    await client.user.update({
       where: { clerkId: user.id },
       data: { stripeId: account.id },
-    })
+    });
 
     const accountLink = await stripe.accountLinks.create({
       account: account.id,
-      refresh_url: 'http://localhost:3000/callback/stripe/refresh',
-      return_url: 'http://localhost:3000/callback/stripe/success',
+      refresh_url: process.env.STRIPE_REFRESH_URL || 'http://localhost:3000/callback/stripe/refresh',
+      return_url: process.env.STRIPE_RETURN_URL || 'http://localhost:3000/callback/stripe/success',
       type: 'account_onboarding',
       collection_options: {
         fields: 'currently_due',
       },
-    })
+    });
 
-    return NextResponse.json({ url: accountLink.url })
+    return NextResponse.json({ url: accountLink.url });
 
-  } catch (error) {
-    console.error('Stripe account creation error:', error)
-    return new NextResponse('Something went wrong', { status: 500 })
+  } catch (error: any) {
+    console.error('Stripe account creation error:', error.message || error);
+    return new NextResponse('Something went wrong while creating Stripe account', { status: 500 });
   }
 }
