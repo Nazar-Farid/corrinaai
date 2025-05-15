@@ -1,3 +1,6 @@
+export const dynamic = 'force-dynamic'
+export const fetchCache = 'force-no-store'
+
 import { onGetBlogPosts } from '@/actions/landing'
 import NavBar from '@/components/navbar'
 import { Button } from '@/components/ui/button'

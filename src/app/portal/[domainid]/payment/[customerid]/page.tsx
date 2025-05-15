@@ -1,3 +1,6 @@
+export const dynamic = 'force-dynamic'
+export const fetchCache = 'force-no-store'
+
 import {
   onDomainCustomerResponses,
   onGetAllDomainBookings,
@@ -16,17 +19,25 @@ const CustomerPaymentPage = async ({
     params.domainid
   )
 
-  if (!questions) return null
+  if (
+    !questions ||
+    !questions.email ||
+    !questions.questions ||
+    !products ||
+    !products.stripeId
+  ) {
+    return <p>Required data is missing.</p>
+  }
 
   return (
     <PortalForm
-      email={questions.email!}
-      products={products?.products}
-      amount={products?.amount}
+      email={questions.email}
+      products={products.products || []}
+      amount={products.amount || 0}
       domainid={params.domainid}
       customerId={params.customerid}
       questions={questions.questions}
-      stripeId={products?.stripeId!}
+      stripeId={products.stripeId}
       type="Payment"
     />
   )
