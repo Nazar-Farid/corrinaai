@@ -3,7 +3,7 @@ import { currentUser } from '@clerk/nextjs'
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 
-export const dynamic = 'force-dynamic' // <-- add this line
+export const dynamic = 'force-dynamic' 
 
 const stripe = new Stripe(process.env.STRIPE_SECRET!, {
   typescript: true,
